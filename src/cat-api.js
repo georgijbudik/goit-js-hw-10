@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Notiflix from 'notiflix';
 
 const API_KEY =
   'live_oUnYnT5YOqwNEHvPYLq1EkPY1ebhADG5wJ0qdhE8LQ5KmWSgSKJ99aofz18heE6i';
