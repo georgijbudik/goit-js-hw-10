@@ -9,22 +9,10 @@ axios.defaults.headers.common['x-api-key'] = API_KEY;
 
 export function fetchBreeds() {
   const url = `${BASE_URL}/breeds`;
-  return axios
-    .get(url)
-    .then(response => response.data)
-    .catch(error => {
-      Notiflix.Notify.failure(`${error}`);
-      throw error;
-    });
+  return axios.get(url).then(response => response.data);
 }
 
 export function fetchCatByBreed(breedId) {
   const url = `${BASE_URL}/images/search?breed_ids=${breedId}`;
-  return axios
-    .get(url)
-    .then(response => response.data[0])
-    .catch(error => {
-      Notiflix.Notify.failure(`${error}`);
-      throw error;
-    });
+  return axios.get(url).then(response => response.data[0]);
 }

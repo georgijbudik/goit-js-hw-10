@@ -60,30 +60,40 @@ const handleSelectChange = () => {
   if (breedId) {
     hideCatInfo();
     showLoader();
-    fetchCatByBreed(breedId).then(cat => {
-      hideLoader();
-      showCatInfo();
-      createMarkupFromCatInformation(cat);
-    });
+    fetchCatByBreed(breedId)
+      .then(cat => {
+        hideLoader();
+        showCatInfo();
+        createMarkupFromCatInformation(cat);
+      })
+      .catch(error => {
+        Notiflix.Notify.failure(`${error}`);
+        throw error;
+      });
   }
 };
 refs.breedSelectEl.addEventListener('change', handleSelectChange);
 
 showLoader();
-fetchBreeds().then(breeds => {
-  hideLoader();
-  createMarkupFromBreeds(breeds, refs);
-  const options = [...refs.breedSelectEl.options].map(option => ({
-    value: option.value,
-    text: option.textContent,
-  }));
+fetchBreeds()
+  .then(breeds => {
+    hideLoader();
+    createMarkupFromBreeds(breeds, refs);
+    const options = [...refs.breedSelectEl.options].map(option => ({
+      value: option.value,
+      text: option.textContent,
+    }));
 
-  if (refs.breedSelectEl.slim) {
-    refs.breedSelectEl.slim.destroy();
-  }
+    if (refs.breedSelectEl.slim) {
+      refs.breedSelectEl.slim.destroy();
+    }
 
-  refs.breedSelectEl.slim = new SlimSelect({
-    select: refs.breedSelectEl,
-    data: options,
+    refs.breedSelectEl.slim = new SlimSelect({
+      select: refs.breedSelectEl,
+      data: options,
+    });
+  })
+  .catch(error => {
+    Notiflix.Notify.failure(`${error}`);
+    throw error;
   });
-});
