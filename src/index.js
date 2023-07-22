@@ -9,9 +9,11 @@ const refs = {
   loaderContainer: document.querySelector('.loader-container'),
 };
 
+let isCatInfoShown = false;
+
 const showLoader = () => {
   refs.loaderEl.style.display = 'block';
-  refs.loaderContainer.style.display = 'flex';
+  refs.loaderContainer.style.display = 'display';
 };
 
 const hideLoader = () => {
@@ -20,7 +22,7 @@ const hideLoader = () => {
 };
 
 const showCatInfo = () => {
-  refs.catContainer.style.display = 'block';
+  if (isCatInfoShown) refs.catContainer.style.display = 'block';
 };
 
 const hideCatInfo = () => {
@@ -32,20 +34,27 @@ const createMarkupFromBreeds = breeds => {
     .map(breed => `<option value="${breed.id}">${breed.name}</option>`)
     .join('');
 };
+
 const createMarkupFromCatInformation = cat => {
+  const { url, breeds } = cat;
   const catImage = document.createElement('img');
   catImage.classList.add('cat-image');
-  catImage.src = `${cat.url}`;
+  catImage.src = `${url}`;
   catImage.alt = 'Cat image';
 
   const title = document.createElement('h2');
   const description = document.createElement('p');
   const temperament = document.createElement('p');
 
-  if (cat.breeds && cat.breeds.length > 0) {
-    title.textContent = cat.breeds[0].name;
-    description.textContent = cat.breeds[0].description;
-    temperament.textContent = `Temperament: ${cat.breeds[0].temperament}`;
+  if (breeds && breeds.length > 0) {
+    const {
+      name,
+      description: breedDescription,
+      temperament: breedTemperament,
+    } = breeds[0];
+    title.textContent = name;
+    description.textContent = breedDescription;
+    temperament.textContent = `Temperament: ${breedTemperament}`;
   } else {
     title.textContent = 'Unknown Breed';
     description.textContent = 'No description available';
@@ -56,45 +65,55 @@ const createMarkupFromCatInformation = cat => {
   refs.catContainer.append(catImage, title, description, temperament);
 };
 
+const showLoaderAndFetchBreeds = () => {
+  showLoader();
+  fetchBreeds()
+    .then(breeds => {
+      hideLoader();
+      createMarkupFromBreeds(breeds);
+      const options = [...refs.breedSelectEl.options].map(option => ({
+        value: option.value,
+        text: option.textContent,
+      }));
+
+      if (refs.breedSelectEl.slim) {
+        refs.breedSelectEl.slim.destroy();
+      }
+
+      refs.breedSelectEl.slim = new SlimSelect({
+        select: refs.breedSelectEl,
+        data: options,
+      });
+    })
+    .catch(error => {
+      showErrorMessage(`${error}`);
+      throw error;
+    });
+};
+
+const showErrorMessage = message => Notiflix.Notify.failure(message);
+
 const handleSelectChange = () => {
   const breedId = refs.breedSelectEl.value;
-  if (breedId) {
-    hideCatInfo();
-    showLoader();
-    fetchCatByBreed(breedId)
-      .then(cat => {
-        hideLoader();
-        showCatInfo();
-        createMarkupFromCatInformation(cat);
-      })
-      .catch(error => {
-        Notiflix.Notify.failure(`${error}`);
-        throw error;
-      });
-  }
-};
-refs.breedSelectEl.addEventListener('change', handleSelectChange);
-
-showLoader();
-fetchBreeds()
-  .then(breeds => {
-    hideLoader();
-    createMarkupFromBreeds(breeds, refs);
-    const options = [...refs.breedSelectEl.options].map(option => ({
-      value: option.value,
-      text: option.textContent,
-    }));
-
-    if (refs.breedSelectEl.slim) {
-      refs.breedSelectEl.slim.destroy();
-    }
-
-    refs.breedSelectEl.slim = new SlimSelect({
-      select: refs.breedSelectEl,
-      data: options,
+  if (!breedId) return;
+  hideCatInfo();
+  showLoader();
+  fetchCatByBreed(breedId)
+    .then(cat => {
+      hideLoader();
+      if (!cat) {
+        showErrorMessage('Cat information not found.');
+        return;
+      }
+      showCatInfo();
+      createMarkupFromCatInformation(cat);
+      isCatInfoShown = true;
+    })
+    .catch(error => {
+      showErrorMessage(`${error}`);
+      throw error;
     });
-  })
-  .catch(error => {
-    Notiflix.Notify.failure(`${error}`);
-    throw error;
-  });
+};
+
+refs.breedSelectEl.addEventListener('change', handleSelectChange);
+showLoaderAndFetchBreeds();
