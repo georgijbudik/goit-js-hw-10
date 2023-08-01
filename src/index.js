@@ -13,7 +13,7 @@ let isCatInfoShown = false;
 
 const showLoader = () => {
   refs.loaderEl.style.display = 'block';
-  refs.loaderContainer.style.display = 'display';
+  refs.loaderContainer.style.display = 'flex';
 };
 
 const hideLoader = () => {
@@ -42,77 +42,75 @@ const createMarkupFromCatInformation = cat => {
   catImage.src = `${url}`;
   catImage.alt = 'Cat image';
 
-  const title = document.createElement('h2');
-  const description = document.createElement('p');
-  const temperament = document.createElement('p');
+  const catName = document.createElement('h2');
+  const catDescription = document.createElement('p');
+  const catTemperament = document.createElement('p');
 
   if (breeds && breeds.length > 0) {
-    const {
-      name,
-      description: breedDescription,
-      temperament: breedTemperament,
-    } = breeds[0];
-    title.textContent = name;
-    description.textContent = breedDescription;
-    temperament.textContent = `Temperament: ${breedTemperament}`;
+    const { name, description, temperament } = breeds[0];
+    catName.textContent = name;
+    catDescription.textContent = description;
+    catTemperament.textContent = `Temperament: ${temperament}`;
   } else {
-    title.textContent = 'Unknown Breed';
-    description.textContent = 'No description available';
-    temperament.textContent = 'Temperament: Unknown';
+    catName.textContent = 'Unknown Breed';
+    catDescription.textContent = 'No description available';
+    catTemperament.textContent = 'Temperament: Unknown';
   }
 
   refs.catContainer.innerHTML = '';
-  refs.catContainer.append(catImage, title, description, temperament);
-};
-
-const showLoaderAndFetchBreeds = () => {
-  showLoader();
-  fetchBreeds()
-    .then(breeds => {
-      hideLoader();
-      createMarkupFromBreeds(breeds);
-      const options = [...refs.breedSelectEl.options].map(option => ({
-        value: option.value,
-        text: option.textContent,
-      }));
-
-      if (refs.breedSelectEl.slim) {
-        refs.breedSelectEl.slim.destroy();
-      }
-
-      refs.breedSelectEl.slim = new SlimSelect({
-        select: refs.breedSelectEl,
-        data: options,
-      });
-    })
-    .catch(error => {
-      showErrorMessage(`${error}`);
-      throw error;
-    });
+  refs.catContainer.append(catImage, catName, catDescription, catTemperament);
 };
 
 const showErrorMessage = message => Notiflix.Notify.failure(message);
 
-const handleSelectChange = () => {
-  const breedId = refs.breedSelectEl.value;
-  if (!breedId) return;
-  hideCatInfo();
-  showLoader();
-  fetchCatByBreed(breedId)
-    .then(cat => {
-      hideLoader();
-      if (!cat) {
-        showErrorMessage('Cat information not found.');
-        return;
-      }
-      showCatInfo();
-      createMarkupFromCatInformation(cat);
-      isCatInfoShown = true;
-    })
-    .catch(error => {
-      showErrorMessage(`${error}`);
-      throw error;
-    });
+const createSlimSelect = () => {
+  const options = [...refs.breedSelectEl.options].map(option => ({
+    value: option.value,
+    text: option.textContent,
+  }));
+
+  if (refs.breedSelectEl.slim) {
+    refs.breedSelectEl.slim.destroy();
+  }
+
+  refs.breedSelectEl.slim = new SlimSelect({
+    select: refs.breedSelectEl,
+    data: options,
+  });
+};
+
+const showLoaderAndFetchBreeds = async () => {
+  try {
+    showLoader();
+    const breeds = await fetchBreeds();
+    hideLoader();
+    createMarkupFromBreeds(breeds);
+    createSlimSelect();
+  } catch (error) {
+    showErrorMessage(`${error}`);
+    throw error;
+  }
+};
+
+const handleSelectChange = async () => {
+  try {
+    const breedId = refs.breedSelectEl.value;
+    if (!breedId) return;
+    hideCatInfo();
+    showLoader();
+    const cat = await fetchCatByBreed(breedId);
+    hideLoader();
+    if (!cat) {
+      showErrorMessage('Cat information not found.');
+      return;
+    }
+    showCatInfo();
+    createMarkupFromCatInformation(cat);
+    isCatInfoShown = true;
+  } catch (error) {
+    showErrorMessage(`${error}`);
+    throw error;
+  }
 };
 
 refs.breedSelectEl.addEventListener('change', handleSelectChange);
